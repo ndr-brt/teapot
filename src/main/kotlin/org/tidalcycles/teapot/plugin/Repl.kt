@@ -2,10 +2,11 @@ package org.tidalcycles.teapot.plugin
 
 import com.intellij.concurrency.JobScheduler
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
-import java.io.File
 import java.io.Reader
+import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -16,9 +17,11 @@ class Repl: Disposable {
     fun start(project: Project) {
         val console = IdeConsole()
         console.start(project)
+        val kotlincJvm = Path.of(PathManager.getPreInstalledPluginsPath()).resolve("Kotlin").resolve("kotlinc").resolve("bin").resolve("kotlinc-jvm")
+        val classpath = Path.of(PathManager.getPluginsPath()).resolve("teapot").resolve("lib")
 
-        process = ProcessBuilder("/home/andrea/.sdkman/candidates/kotlin/current/bin/kotlinc-jvm", "-cp", "build/libs/teapot.jar")
-            .directory(File("/home/andrea/Code/livecoding/teapot"))
+        val completeClasspath = classpath.toFile().listFiles().filter { it.extension == "jar" }.joinToString(":")
+        process = ProcessBuilder(kotlincJvm.toString(), "-cp", completeClasspath)
             .start()
 
         val outReader = process.inputStream.reader()

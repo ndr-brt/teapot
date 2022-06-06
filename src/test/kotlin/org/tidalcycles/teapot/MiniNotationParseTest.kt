@@ -1,5 +1,6 @@
 package org.tidalcycles.teapot
 
+import com.intellij.openapi.application.PathManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

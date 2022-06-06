@@ -17,11 +17,11 @@ data class SuperDirtStream(
     private val osc = OSCPortOut(InetSocketAddress(hostname, port))
     private val timer = Timer()
 
-    fun tick(cycle: TimeSpan, state: org.tidalcycles.teapot.ClockState) {
+    fun tick(cycle: TimeSpan, state: ClockState) {
         patterns.map { entry ->
             val pattern = entry.value
             val events = pattern.query(cycle).filter { it.isOnset() }
-            log.info("Evaluate cycle $cycle. Events: ${events.size}")
+            println("Evaluate cycle $cycle. Events: ${events.size}")
             events.forEach { event ->
                 val cycleOn = event.whole?.begin ?: 0.0 // these should always be discrete, so with a whole
                 val cycleOff = event.whole?.end ?: 0.0
@@ -43,7 +43,7 @@ data class SuperDirtStream(
                     "delta", delta.toDouble(),
                 ) + eventArguments
 
-                log.info("Message: $arguments")
+                println("Message: $arguments")
 
                 val message = OSCMessage("/dirt/play", arguments)
                 val sendAt = Instant.ofEpochMilli(millis.toLong())

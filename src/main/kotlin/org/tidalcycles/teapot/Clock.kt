@@ -33,7 +33,7 @@ object Clock {
             org.tidalcycles.teapot.Clock.streams.forEach { it.tick(span, clockState) }
 
             val wait = logicalTime - clockState.now()
-//            log.info("Ticks $ticks. Wait $wait")
+
             if (wait > 0) {
                 Thread.sleep(wait.toLong())
             }
