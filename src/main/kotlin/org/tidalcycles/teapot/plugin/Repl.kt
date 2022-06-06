@@ -4,7 +4,6 @@ import com.intellij.concurrency.JobScheduler
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.Service
-import com.intellij.openapi.project.Project
 import java.io.Reader
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -12,46 +11,48 @@ import java.util.concurrent.TimeUnit
 @Service
 class Repl: Disposable {
 
-    lateinit var process: Process
+    var process: Process? = null
 
-    fun start(project: Project) {
-        val console = IdeConsole()
-        console.start(project)
-        val kotlincJvm = Path.of(PathManager.getPreInstalledPluginsPath()).resolve("Kotlin").resolve("kotlinc").resolve("bin").resolve("kotlinc-jvm")
-        val classpath = Path.of(PathManager.getPluginsPath()).resolve("teapot").resolve("lib")
+    fun start(console: IdeConsole) {
+        if (process == null || process?.isAlive == false) {
+            val kotlincJvm = Path.of(PathManager.getPreInstalledPluginsPath()).resolve("Kotlin").resolve("kotlinc").resolve("bin").resolve("kotlinc-jvm")
+            val classpath = Path.of(PathManager.getPluginsPath()).resolve("teapot").resolve("lib")
 
-        val completeClasspath = classpath.toFile().listFiles().filter { it.extension == "jar" }.joinToString(":")
-        process = ProcessBuilder(kotlincJvm.toString(), "-cp", completeClasspath)
-            .start()
-
-        val outReader = process.inputStream.reader()
-        val errReader = process.errorStream.reader()
-        JobScheduler.getScheduler().scheduleWithFixedDelay(
-            {
-                outReader.readString().takeIf { it.isNotBlank() }?.let { console.logInfo(it) }
-                errReader.readString().takeIf { it.isNotBlank() }?.let { console.logError(it) }
-            },
-            0, 100, TimeUnit.MILLISECONDS
-        )
+            val completeClasspath = classpath.toFile().listFiles()?.filter { it.extension == "jar" }?.joinToString(":")
+            process = ProcessBuilder(kotlincJvm.toString(), "-cp", completeClasspath)
+                .start().apply {
+                    JobScheduler.getScheduler()
+                        .scheduleWithFixedDelay({
+                            inputStream.reader().pipeTo { console.logInfo(it) }
+                            errorStream.reader().pipeTo { console.logError(it) }
+                        }, 0, 100, TimeUnit.MILLISECONDS)
+                }
+        }
     }
 
     fun writeLine(line: String) {
-        val writer = process.outputStream?.writer() ?: return
-        writer.write("$line\n")
-        writer.flush()
+        process?.outputStream?.writer()?.let {
+            it.write("$line\n")
+            it.flush()
+        }
     }
 
+    fun isRunning(): Boolean = process?.isAlive ?: false
+
     override fun dispose() {
-        process.destroy()
+        process?.destroy()
     }
 }
 
+private fun Reader.pipeTo(consumer: (String) -> Unit) {
+    this.readString().takeIf { it.isNotBlank() }?.let(consumer)
+}
 
 private fun Reader.readString(): String {
-    var lines = ""
+    var chars = ""
     while (ready()) {
-        lines += read().toChar()
+        chars += read().toChar()
     }
-    return lines
+    return chars
 
 }
