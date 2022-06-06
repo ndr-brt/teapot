@@ -10,11 +10,14 @@ import com.intellij.openapi.util.TextRange
 
 class EvalCode: AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
+        val repl = service<Repl>()
+        if (!repl.isRunning()) {
+            StartAction().actionPerformed(event)
+        }
+
         val editor = event.getData(EDITOR)!!
         val result = editor.currentParagraphTextAndRange();
         val code = result!!.first
-
-        val repl = service<Repl>()
 
         repl.writeLine(code)
     }
