@@ -8,7 +8,6 @@ import com.intellij.execution.ui.ConsoleViewContentType.LOG_INFO_OUTPUT
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.wm.RegisterToolWindowTask
 import com.intellij.openapi.wm.ToolWindowManager
 
@@ -24,12 +23,21 @@ class IdeConsole : Console, Disposable {
     private var console: ConsoleView? = null
     private var project: Project? = null
 
-    fun start(project: Project?) {
-        ProjectManager.getInstance().openProjects.forEach { registerTidalToolWindowIn(it) }
-        if (project != null) {
-            ToolWindowManager.getInstance(project).getToolWindow(tidalToolWindowId)?.show()
-        }
+    fun start(project: Project) {
+        this.project = project
+        registerTidalToolWindowIn(project)
+        ToolWindowManager.getInstance(project).getToolWindow(tidalToolWindowId)?.show()
     }
+
+    fun stop() {
+        project?.let { ToolWindowManager.getInstance(it) }?.unregisterToolWindow(tidalToolWindowId)
+    }
+
+    override fun dispose() = stop()
+
+    override fun logInfo(message: String) = printToConsoles(message, LOG_INFO_OUTPUT)
+    override fun logError(message: String) = printToConsoles(message, LOG_ERROR_OUTPUT)
+    override fun logException(throwable: Throwable) = printToConsoles(throwable.stackTraceToString(), LOG_ERROR_OUTPUT)
 
     private fun registerTidalToolWindowIn(project: Project) {
         val toolWindowManager = ToolWindowManager.getInstance(project)
@@ -40,27 +48,7 @@ class IdeConsole : Console, Disposable {
         }
     }
 
-    fun stop() {
-        ToolWindowManager.getInstance(project!!).unregisterToolWindow(tidalToolWindowId)
-    }
-
-    override fun dispose() = stop()
-
-    override fun logInfo(message: String) {
-        val cleaned = message.replace("Prelude>", "").trim()
-        printToConsoles("$cleaned\n", LOG_INFO_OUTPUT)
-    }
-
-    override fun logError(message: String) {
-        val cleaned = message.replace("Prelude>", "").trim()
-        printToConsoles("$cleaned\n", LOG_ERROR_OUTPUT)
-    }
-
-    override fun logException(throwable: Throwable) {
-        printToConsoles("${throwable.stackTraceToString()}\n", LOG_ERROR_OUTPUT)
-    }
-
     private fun printToConsoles(s: String, contentType: ConsoleViewContentType) {
-        console?.print(s, contentType)
+        console?.print("$s\n", contentType)
     }
 }

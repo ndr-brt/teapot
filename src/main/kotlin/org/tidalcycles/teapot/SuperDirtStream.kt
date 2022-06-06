@@ -21,7 +21,7 @@ data class SuperDirtStream(
         patterns.map { entry ->
             val pattern = entry.value
             val events = pattern.query(cycle).filter { it.isOnset() }
-            println("Evaluate cycle $cycle. Events: ${events.size}")
+//            println("Evaluate cycle $cycle. Events: ${events.size}")
             events.forEach { event ->
                 val cycleOn = event.whole?.begin ?: 0.0 // these should always be discrete, so with a whole
                 val cycleOff = event.whole?.end ?: 0.0
@@ -43,7 +43,7 @@ data class SuperDirtStream(
                     "delta", delta.toDouble(),
                 ) + eventArguments
 
-                println("Message: $arguments")
+//                println("Message: $arguments")
 
                 val message = OSCMessage("/dirt/play", arguments)
                 val sendAt = Instant.ofEpochMilli(millis.toLong())
