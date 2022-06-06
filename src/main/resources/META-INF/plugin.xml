@@ -1,0 +1,30 @@
+<idea-plugin>
+    <id>Teapot</id>
+    <name>Teapot</name>
+    <version>0.0.1</version>
+    <vendor url="https://github.com/ndr-brt/teapot">ndr-brt</vendor>
+
+    <idea-version since-build="212.4746.92"/>
+    <category>Plugin Development</category>
+    <description>stuff</description>
+    <change-notes>
+        <![CDATA[
+        <html lang="EN"><body><ul>
+			<li>something</li>
+        </ul></body></html>
+        ]]>
+    </change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <actions>
+        <group id="teapot" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <action class="org.tidalcycles.teapot.plugin.StartAction" text="Start Teapot"/>
+            <action class="org.tidalcycles.teapot.plugin.EvalCode" text="Eval Teapot code">
+                <keyboard-shortcut first-keystroke="ctrl P" keymap="$default"/>
+            </action>
+        </group>
+    </actions>
+</idea-plugin>
