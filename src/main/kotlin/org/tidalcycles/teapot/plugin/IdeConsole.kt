@@ -9,6 +9,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.RegisterToolWindowTask
+import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowManager
 
 interface Console {
@@ -19,34 +20,31 @@ interface Console {
 
 @Service
 class IdeConsole : Console, Disposable {
-    private val tidalToolWindowId = "Teapot"
+    private val windowId = "Teapot"
     private var console: ConsoleView? = null
     private var project: Project? = null
 
     fun start(project: Project) {
         this.project = project
-        registerTidalToolWindowIn(project)
-        ToolWindowManager.getInstance(project).getToolWindow(tidalToolWindowId)?.show()
+        val toolWindowManager = ToolWindowManager.getInstance(project)
+        val toolWindow = toolWindowManager.getToolWindow(windowId)
+        if (toolWindow == null) {
+            val console = TextConsoleBuilderFactory.getInstance().createBuilder(project).console
+            this.console = console
+            val registerTask = RegisterToolWindowTask(windowId, component = console.component, canCloseContent = false)
+            toolWindowManager.registerToolWindow(registerTask)
+        }
+
+        toolWindowManager.getToolWindow(windowId)!!.show()
     }
 
-    fun stop() {
-        project?.let { ToolWindowManager.getInstance(it) }?.unregisterToolWindow(tidalToolWindowId)
+    override fun dispose() {
+        project?.let { ToolWindowManager.getInstance(it) }?.unregisterToolWindow(windowId)
     }
-
-    override fun dispose() = stop()
 
     override fun logInfo(message: String) = printToConsoles(message, LOG_INFO_OUTPUT)
     override fun logError(message: String) = printToConsoles(message, LOG_ERROR_OUTPUT)
     override fun logException(throwable: Throwable) = printToConsoles(throwable.stackTraceToString(), LOG_ERROR_OUTPUT)
-
-    private fun registerTidalToolWindowIn(project: Project) {
-        val toolWindowManager = ToolWindowManager.getInstance(project)
-        if (toolWindowManager.getToolWindow(tidalToolWindowId) == null) {
-            val console = TextConsoleBuilderFactory.getInstance().createBuilder(project).console
-            toolWindowManager.registerToolWindow(RegisterToolWindowTask(tidalToolWindowId, component = console.component, canCloseContent = false))
-            this.console = console
-        }
-    }
 
     private fun printToConsoles(s: String, contentType: ConsoleViewContentType) {
         console?.print("$s\n", contentType)

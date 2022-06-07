@@ -14,8 +14,8 @@ class StartAction: AnAction() {
         if (repl.isRunning()) {
             console.logInfo("Teapot is already running")
         } else {
-            console.logInfo("Starting teapot...")
             console.start(project)
+            console.logInfo("Starting teapot...")
             repl.start(console)
 
             repl.writeLine("import org.tidalcycles.teapot.*")
